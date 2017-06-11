@@ -2,6 +2,9 @@
 
 # file: kja.rb
 
+require 'tempfile'
+require 'rxfhelper'
+
 # description: Intended for use with the kj gem
 #
 # e.g.
@@ -21,9 +24,10 @@
 
 class Kja
 
-  def initialize(audio_player: '/usr/bin/ogg123 -q', base_dir: '')
+  def initialize(audio_player: '/usr/bin/ogg123 -q', 
+                 ogg_baseurl: 'http://rorbuilder.info/r/ruby/kja/ogg')
 
-    @base_dir, @audio_player = base_dir, audio_player
+    @ogg_baseurl, @audio_player = ogg_baseurl, audio_player
 
   end
 
@@ -36,13 +40,17 @@ class Kja
     chapter_title = book_title + '_' + chapter_no
     verse_title = chapter_title + '_' + verse_no
 
-    lib = File.dirname(__FILE__)
-    base_dir = @base_dir.empty? ? File.join(lib,'..','ogg', 'kj')  : @base_dir
+    ogg_filepath = File.join(book_title, chapter_title, verse_title + '.ogg')
+    url = @ogg_baseurl + '/' + ogg_filepath
+    audio, _ = RXFHelper.read(url)
+    
+    tmpfile = Tempfile.new('kva')
+    file = File.new(tmpfile.path,'w')        
+    file.puts audio
+    file.close
 
-    filepath = File.join(base_dir, book_title, chapter_title, 
-      verse_title + '.ogg')
-
-    `#{@audio_player} #{filepath}`    
+    command = @audio_player + ' ' + tmpfile.path
+    system command
 
   end
 
