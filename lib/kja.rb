@@ -2,8 +2,9 @@
 
 # file: kja.rb
 
+require 'dynarex'
 require 'tempfile'
-require 'rxfhelper'
+
 
 # description: Intended for use with the kj gem
 #
@@ -30,17 +31,25 @@ class Kja
     @ogg_baseurl, @audio_player = ogg_baseurl, audio_player
 
   end
-
-  def speak(s)
+  
+  def duration(s)
 
     book_no, book_title, chapter_no, verse_no = \
       s.downcase.match(/^(?:(\d) )?([\w ]+) (\d+):(\d+)/).captures
 
     book_title = book_no + '_' + book_title if book_no
     chapter_title = book_title + '_' + chapter_no
-    verse_title = chapter_title + '_' + verse_no
+    url = @ogg_baseurl + '/' + File.join(book_title, chapter_title, 'dir.xml')
 
-    ogg_filepath = File.join(book_title, chapter_title, verse_title + '.ogg')
+    dx = Dynarex.new url
+    ogg = dx.find_by_name chapter_title + '_' + verse_no + '.ogg'    
+    ogg.description[/\d+\.\d+$/].to_f
+
+  end  
+
+  def speak(s)
+
+    ogg_filepath = fetch_ogg_filepath(s)
     url = @ogg_baseurl + '/' + ogg_filepath
     audio, _ = RXFHelper.read(url)
     
@@ -52,6 +61,21 @@ class Kja
     command = @audio_player + ' ' + tmpfile.path
     system command
 
+  end
+  
+  private
+  
+  
+  def fetch_ogg_filepath(s)
+    
+    book_no, book_title, chapter_no, verse_no = \
+      s.downcase.match(/^(?:(\d) )?([\w ]+) (\d+):(\d+)/).captures
+
+    book_title = book_no + '_' + book_title if book_no
+    chapter_title = book_title + '_' + chapter_no
+    verse_title = chapter_title + '_' + verse_no
+
+    File.join(book_title, chapter_title, verse_title + '.ogg')    
   end
 
 end
