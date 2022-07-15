@@ -6,6 +6,7 @@ require 'dynarex'
 require 'tempfile'
 require 'rxfreader'
 require 'kj_reading'
+require 'easyaudio_utils'
 
 
 # description: Intended for use with the kj gem
@@ -36,19 +37,6 @@ class Kja
 
   end
 
-  def download_ogg(s)
-
-    ogg_filepath = fetch_ogg_filepath(s)
-    url = @ogg_baseurl + '/' + ogg_filepath
-    audio, _ = RXFReader.read(url)
-
-    tmpfile = Tempfile.new('kva')
-    File.write tmpfile.path + '.ogg', audio
-
-    return tmpfile.path + '.ogg'
-
-  end
-
   def duration(s)
 
     book_title, chapter_title, verse_no = fracture(s)
@@ -61,6 +49,9 @@ class Kja
 
   end
 
+  # e.g. speak 'Eze 18, 30..32'
+  # plays the audio of the title requested
+  #
   def speak(title)
 
     a = KjReading.verses title
@@ -75,7 +66,9 @@ class Kja
 
   end
 
-
+  # e.g. download 'Eze 18, 30..32'
+  # downloads the audio as an ogg file
+  #
   def download(s, outfile=nil)
 
     puts 'downloading ...' if @debug
@@ -88,10 +81,12 @@ class Kja
 
     puts 'converting to wav: ' + downloads.inspect if @debug
 
+    dir = File.dirname(Tempfile.new.path)
+
     wavfiles = downloads.map do |oggfile|
 
       wavfile = oggfile.sub(/\.ogg$/,'.wav')
-      EasyAudioUtils.new(oggfile, wavfile).convert
+      EasyAudioUtils.new(oggfile, wavfile, working_dir: dir).convert
       sleep 1.4
       File.basename(wavfile)
 
@@ -103,8 +98,8 @@ class Kja
     #
     fullwavfile = Tempfile.new('kva').path + '.wav'
     puts 'creating fullwavfile:' + fullwavfile.inspect if @debug
-    EasyAudioUtils.new(out: fullwavfile, working_dir: \
-                       File.dirname(fullwavfile)).concat(wavfiles, sample_rate: 22050)
+    EasyAudioUtils.new(out: fullwavfile, working_dir: dir).concat(wavfiles,
+                                                                  sample_rate: 22050)
 
     # convert wav to ogg
     #
@@ -117,6 +112,19 @@ class Kja
   end
 
   private
+
+  def download_ogg(s)
+
+    ogg_filepath = fetch_ogg_filepath(s)
+    url = @ogg_baseurl + '/' + ogg_filepath
+    audio, _ = RXFReader.read(url)
+
+    tmpfile = Tempfile.new('kva')
+    File.write tmpfile.path + '.ogg', audio
+
+    return tmpfile.path + '.ogg'
+
+  end
 
   def fracture(s)
 

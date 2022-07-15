@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'kja'
-  s.version = '0.3.0'
+  s.version = '0.3.1'
   s.summary = 'Downloads and plays King James Bible OGG files from jamesrobertson.me.uk'
   s.authors = ['James Robertson']
   s.files = Dir['lib/kja.rb']
